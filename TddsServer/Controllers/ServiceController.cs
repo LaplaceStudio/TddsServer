@@ -12,6 +12,22 @@ using TddsServer.Objects;
 
 namespace TddsServer.Controllers {
     public class ServiceController : ControllerBase {
+
+        [HttpGet("/service")]
+        public async Task Get() {
+            if (HttpContext.WebSockets.IsWebSocketRequest) {
+                using WebSocket webSocket = await
+                                   HttpContext.WebSockets.AcceptWebSocketAsync();
+
+                await Utils.Echo(HttpContext, webSocket);
+
+            } else {
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            }
+        }
+
+
+
         [HttpPost("/service")]
         public async Task<ActionResult<TddsSvcMsg>> Get([FromBody] TddsSvcMsg msg) {
             if (msg == null) return BadRequest();
