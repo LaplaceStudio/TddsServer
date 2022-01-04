@@ -43,7 +43,7 @@ namespace TddsServer.General {
         public static async Task SendMsgAsync(WebSocket webSocket, TddsSvcMsg msg) {
             if (webSocket == null) return;
             ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(msg.GetJson()));
-            ArraySegment<byte> lenBytes = new ArraySegment<byte>(BitConverter.GetBytes(buffer.Count).Reverse().ToArray());
+            ArraySegment<byte> lenBytes = new ArraySegment<byte>(BitConverter.GetBytes((ushort)buffer.Count).Reverse().ToArray());
             // Send content length
             await webSocket.SendAsync(lenBytes, WebSocketMessageType.Binary, false, CancellationToken.None);
             // Send content

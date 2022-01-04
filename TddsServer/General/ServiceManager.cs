@@ -82,48 +82,56 @@ namespace TddsServer.General {
 
         public async Task RetransmitToUploader(WebSocket downloaderSocket) {
             var buffer = new byte[4096];
-            WebSocketReceiveResult result = await downloaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue) {
-                if (UploaderSocket == null) {
-                    // Receive and not send if Uploader is null.
-                    if (result.EndOfMessage) {
-                        await TddsService.SendMsgAsync(downloaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+            try {
+                WebSocketReceiveResult result = await downloaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                while (!result.CloseStatus.HasValue) {
+                    if (UploaderSocket == null) {
+                        // Receive and not send if Uploader is null.
+                        if (result.EndOfMessage) {
+                            await TddsService.SendMsgAsync(downloaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+                        }
+                    } else {
+                        // Received and send if Uploader is not null.
+                        await UploaderSocket.SendAsync(
+                            new ArraySegment<byte>(buffer, 0, result.Count),
+                            result.MessageType,
+                            result.EndOfMessage,
+                           CancellationToken.None);
                     }
-                } else {
-                    // Received and send if Uploader is not null.
-                    await UploaderSocket.SendAsync(
-                        new ArraySegment<byte>(buffer, 0, result.Count),
-                        result.MessageType,
-                        result.EndOfMessage,
-                       CancellationToken.None);
+                    result = await downloaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 }
-                result = await downloaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                await downloaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+                DisconnectAsDownloader();
+            }catch(Exception exp) {
+                Console.WriteLine("Connection is closed. " + exp.Message);
             }
-            await downloaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            DisconnectAsDownloader();
         }
 
         public async Task RetransmitToDownloader(WebSocket uploaderSocket) {
             var buffer = new byte[4096];
-            WebSocketReceiveResult result = await uploaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            while (!result.CloseStatus.HasValue) {
-                if (DownloaderSocket == null) {
-                    // Receive and not send if Downloader is null.
-                    if (result.EndOfMessage) {
-                        await TddsService.SendMsgAsync(uploaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+            try {
+                WebSocketReceiveResult result = await uploaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                while (!result.CloseStatus.HasValue) {
+                    if (DownloaderSocket == null) {
+                        // Receive and not send if Downloader is null.
+                        if (result.EndOfMessage) {
+                            await TddsService.SendMsgAsync(uploaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+                        }
+                    } else {
+                        // Received and send if Downloader is not null.
+                        await DownloaderSocket.SendAsync(
+                            new ArraySegment<byte>(buffer, 0, result.Count),
+                            result.MessageType,
+                            result.EndOfMessage,
+                            CancellationToken.None);
                     }
-                } else {
-                    // Received and send if Downloader is not null.
-                    await DownloaderSocket.SendAsync(
-                        new ArraySegment<byte>(buffer, 0, result.Count),
-                        result.MessageType,
-                        result.EndOfMessage,
-                        CancellationToken.None);
+                    result = await uploaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 }
-                result = await uploaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                await uploaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+                DisconnectAsUploader();
+            }catch(Exception exp) {
+                Console.WriteLine("Connection is closed. "+ exp.Message);
             }
-            await uploaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            DisconnectAsUploader();
         }
 
     }

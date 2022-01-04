@@ -42,17 +42,17 @@ namespace TddsServer.Objects {
 
         [JsonProperty("Data")]
         public object Data { get; set; }
-        public DateTime DateTime { get; set; }
+        public string Time { get; set; }
 
         [JsonConstructor]
         public TddsSvcMsg() {
-            DateTime = DateTime.Now;
+            Time = DateTime.Now.ToString();
         }
 
         public TddsSvcMsg(MessageType type, string message) {
             Type = type;
             Message = message;
-            DateTime = DateTime.Now;
+            Time = DateTime.Now.ToString();
         }
 
         public TddsSvcMsg(MessageType type, string message, object data) : this(type, message) {
