@@ -22,9 +22,11 @@ namespace TddsServer.Objects {
         ServiceOnline=100,
         TddsOnline=101,
         ConsoleOnline=102,
-        GetChannelIds=103,
-        GetChannelImageFormat=104,
-        GetAllChannelsImageFormat=105,
+        NoticeUploaderOnline=103,
+        NoticeDownloaderOnline=104,
+        GetChannelIds=105,
+        GetChannelImageFormat=106,
+        GetAllChannelsImageFormat=107,
 
 
         #endregion

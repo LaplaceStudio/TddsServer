@@ -13,6 +13,9 @@ namespace TddsServer.General {
 
         private static readonly ILogger logger;
 
+        public bool IsUploaderOnline => UploaderSocket != null && UploaderSocket.State == WebSocketState.Open;
+        public bool IsDownloaderOnline => DownloaderSocket != null && DownloaderSocket.State == WebSocketState.Open;
+
         public async void ConnectAsUploader(HttpContext httpContext, WebSocket webSocket) {
             if (UploaderSocket != null) {
                 Console.WriteLine("Uploader already exists. Aborting old uploader...");
@@ -68,23 +71,13 @@ namespace TddsServer.General {
         public async void DisconnectAsDownloader() {
             TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOffline, "Downloader logged out.");
             if (UploaderSocket != null)
-                await SendAsync(UploaderSocket, msg.GetJson());
+                await TddsService.SendMsgAsync(UploaderSocket, msg);
             DownloaderSocket?.Abort();
             //logger.LogInformation($"Id:{TddsConnectionId} disconnected service.");
 
             DownloaderSocket = null;
             DownloaderId = null;
             Console.WriteLine(msg.Message);
-        }
-
-        public async Task SendAsync(WebSocket webSocket,string message) {
-            if (webSocket == null) return;
-            ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(message));
-            ArraySegment<byte> lenBytes = new ArraySegment<byte>(BitConverter.GetBytes(buffer.Count).Reverse().ToArray());
-            // Send content length
-            await webSocket.SendAsync(lenBytes, WebSocketMessageType.Binary, false, CancellationToken.None);
-            // Send content
-            await webSocket.SendAsync(buffer, WebSocketMessageType.Binary, true, CancellationToken.None);
         }
 
         public async Task RetransmitToUploader(WebSocket downloaderSocket) {

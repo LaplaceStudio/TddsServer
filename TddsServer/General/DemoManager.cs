@@ -64,8 +64,8 @@ namespace TddsServer.General {
         /// </summary>
         /// <param name="clientId"></param>
         public static async void RemoveClient(string clientId) {
-            ClientSocket.TryRemove(clientId, out WebSocket ws);
-            TddsSvcMsg msg = new TddsSvcMsg(MessageType.ConsoleDisconnected, $"Id:{clientId} disconnected.");
+            ClientSocket.TryRemove(clientId, out WebSocket? ws);
+            TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOffline, $"Id:{clientId} disconnected.");
 
             // Send logged out message to TDDS
             if (TddsSocket != null) {

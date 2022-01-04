@@ -8,10 +8,6 @@ namespace TddsServer.General {
         public static ServiceManager ConsoleManager = new ServiceManager();
         public static ServiceManager NoticeManager = new ServiceManager();
 
-        public static async void ConnectAsUploader(ServiceManager serviceManager,HttpContext httpContext,WebSocket webSocket) {
-            
-        }
-
         public static TddsSvcMsg Handle(TddsSvcMsg msg) {
             if (msg == null) {
                 return TddsSvcMsg.UnresolvedMsg();
@@ -19,6 +15,14 @@ namespace TddsServer.General {
             switch (msg.Type) {
                 case MessageType.ServiceOnline:
                     return new TddsSvcMsg(MessageType.Success, "Service is online.");
+                case MessageType.TddsOnline:
+                    return new TddsSvcMsg(MessageType.Success, "TDDS is " + (ConsoleManager.IsUploaderOnline ? "online" : "offline"), ConsoleManager.IsUploaderOnline);
+                case MessageType.ConsoleOnline:
+                    return new TddsSvcMsg(MessageType.Success, "Console is " + (ConsoleManager.IsDownloaderOnline ? "online" : "offline"), ConsoleManager.IsDownloaderOnline);
+                case MessageType.NoticeUploaderOnline:
+                    return new TddsSvcMsg(MessageType.Success, "Notice uploader is " + (ConsoleManager.IsUploaderOnline ? "online" : "offline"), ConsoleManager.IsUploaderOnline);
+                case MessageType.NoticeDownloaderOnline:
+                    return new TddsSvcMsg(MessageType.Success, "Notice downloader is " + (ConsoleManager.IsUploaderOnline ? "online" : "offline"), ConsoleManager.IsUploaderOnline);
                 case MessageType.GetChannelIds:
                     var ids = ChannelManager.GetChannelIds();
                     return new TddsSvcMsg(msg.Type, $"Got {ids.Count} uploading channels.", ids);
@@ -28,10 +32,13 @@ namespace TddsServer.General {
                     } else {
                         return TddsSvcMsg.InvalidParamMsg("channelId");
                     }
+                case MessageType.GetAllChannelsImageFormat:
+                    return ChannelManager.GetAllChannelsImageFormats();
                 default:
                     return new TddsSvcMsg(MessageType.Error, "Unknow message type.");
             }
         }
+
 
         public static async Task SendMsgAsync(WebSocket webSocket, TddsSvcMsg msg) {
             if (webSocket == null) return;

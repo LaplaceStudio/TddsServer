@@ -13,6 +13,21 @@ using TddsServer.Objects;
 namespace TddsServer.Controllers {
     public class ServiceController : ControllerBase {
 
+        /// <summary>
+        /// HTTP API
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <returns></returns>
+        [HttpPost("/service")]
+        public ActionResult<TddsSvcMsg> Get([FromBody] TddsSvcMsg msg) {
+            if (msg == null) return BadRequest();
+            return TddsService.Handle(msg);
+        }
+
+        /// <summary>
+        /// WebSocket API
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("/service")]
         public async Task Get() {
             if (HttpContext.WebSockets.IsWebSocketRequest) {
@@ -48,19 +63,5 @@ namespace TddsServer.Controllers {
         }
 
 
-
-        [HttpPost("/service")]
-        public async Task<ActionResult<TddsSvcMsg>> Get([FromBody] TddsSvcMsg msg) {
-            if (msg == null) return BadRequest();
-            switch (msg.Type) {
-                case MessageType.ServiceOnline:
-                    return new TddsSvcMsg(MessageType.Success, "Service is online.");
-                case MessageType.GetChannelIds:
-                    var ids = ChannelManager.GetChannelIds();
-                    return new TddsSvcMsg(msg.Type, $"Got {ids.Count} uploading channels.", ids);
-                default:
-                    return new TddsSvcMsg(MessageType.Error, "Unknow message type.");
-            }
-        }
     }
 }
