@@ -11,7 +11,7 @@ namespace TddsServer.General {
         public static WebSocket? UploaderSocket = null;
         public static WebSocket? DownloaderSocket = null;
 
-        private static readonly ILogger logger;
+        //private static readonly ILogger logger = new Log4NetLogger(new Log4NetProviderOptions());
 
         public bool IsUploaderOnline => UploaderSocket != null && UploaderSocket.State == WebSocketState.Open;
         public bool IsDownloaderOnline => DownloaderSocket != null && DownloaderSocket.State == WebSocketState.Open;
@@ -21,7 +21,7 @@ namespace TddsServer.General {
                 Console.WriteLine("Uploader already exists. Aborting old uploader...");
                 UploaderSocket.Abort();
                 Console.WriteLine("Aborted old uploader.");
-                //logger.LogInformation($"Abort TDDS websocket, Id:{TddsConnectionId}");
+                _ = Logger.Log(LogType.Info, "Old uploader socket is aborted.");
             }
             UploaderSocket = webSocket;
             UploaderId = httpContext.Connection.RemoteIpAddress == null
@@ -33,8 +33,8 @@ namespace TddsServer.General {
             await TddsService.SendMsgAsync(UploaderSocket, msg);
 
             Console.WriteLine(msg.Message);
-            
-            //logger.LogInformation($"Id:{TddsConnectionId} connected service as TDDS.");
+
+           _ = Logger.Log(LogType.Info, $"Id:{UploaderId} connected service as uploader.");
         }
 
         public async void DisconnectAsUploader() {
