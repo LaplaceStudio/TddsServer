@@ -22,62 +22,65 @@ namespace TddsServer.General {
             return UploadChannels.Keys.ToList();
         }
 
-        public static async Task<int> CreateUploadChannelAsync(WebSocket webSocket) {
+        public static TddsSvcMsg CreateUploadChannel(WebSocket webSocket, int channelId, int imageWidth, int imageHeight, int pixelFormt) {
+            TddsSvcMsg msg= new TddsSvcMsg();
             if (UploadChannels.Keys.Count >= MAX_CHANNELS_COUNT) {
-                TddsSvcMsg msg = new TddsSvcMsg(MessageType.Error, "The maximum number of channels has been reached.");
-                await ServiceManager.SendAsync(webSocket, msg.GetJson());
+                msg = new TddsSvcMsg(MessageType.Error, "The maximum number of channels has been reached.");
                 Console.WriteLine(msg.Message);
-                return -1;
-            } else {
-                List<int> chIds = UploadChannels.Keys.ToList();
-                int id = Enumerable.Range(1, MAX_CHANNELS_COUNT).Except(chIds).First();
-                UploadChannels[id] = webSocket;
-                TddsSvcMsg msg2 = new TddsSvcMsg(MessageType.Success, "Create channel successfully.", id);
-                await ServiceManager.SendAsync(webSocket, msg2.GetJson());
-                Console.WriteLine(msg2.Message);
-                return id;
+                return msg;
             }
+            if(!Enum.IsDefined(typeof(PixelFormatType),pixelFormt) || pixelFormt == (int)PixelFormatType.UNKNOWN) {
+                msg = new TddsSvcMsg(MessageType.Error, $"PixelFormat [{pixelFormt}] is not available.");
+                return msg;
+            }
+
+            if (UploadChannels.TryGetValue(channelId, out WebSocket? oldChannel)) {
+                Console.WriteLine($"Close old channel for create new channel with id {channelId}.");
+                oldChannel?.Abort();
+                Console.WriteLine($"Old channel with id {channelId} is closed.");
+            }
+
+            ChannelImageFormat format = new ChannelImageFormat() {
+                ChannelId = channelId,
+                ImageWidth = (uint)imageWidth,
+                ImageHeight = (uint)imageHeight,
+                PixelFormat = Enum.IsDefined(typeof(PixelFormatType), pixelFormt) ? ((PixelFormatType)pixelFormt) : PixelFormatType.UNKNOWN
+            };
+            UploadChannels[channelId] = webSocket;
+            ChannelImageFormats[channelId] = format;
+
+            msg = new TddsSvcMsg(MessageType.Success, $"Create channel with id:{channelId}, imageWidth:{imageWidth}, imageHeight:{imageHeight}, pixelFormat:{pixelFormt} successfully.", channelId);
+            Console.WriteLine(msg.Message);
+            return msg;
         }
 
-        public static async Task RemoveUploadChannelAsync(int id) {
+        public static TddsSvcMsg RemoveUploadChannelAsync(int id) {
             TddsSvcMsg msg;
             if(UploadChannels.TryRemove(id, out WebSocket? socket)) {
                 socket?.Dispose();
+                ChannelImageFormats.TryRemove(id, out _);
                 msg = new TddsSvcMsg(MessageType.Success, $"Uploading channel {id} is removed successfully.");
             } else {
-                msg = new TddsSvcMsg(MessageType.Error, $"Remove uploading channel {id} failed.");
+                msg = new TddsSvcMsg(MessageType.Error, $"Remove uploading channel {id} failed. No channel with id {id}.");
             }
-            if(ServiceManager.TddsSocket!=null)
-                await ServiceManager.SendAsync(ServiceManager.TddsSocket, msg.GetJson());
-            if (ServiceManager.ConsoleSocket != null)
-                await ServiceManager.SendAsync(ServiceManager.ConsoleSocket, msg.GetJson());
+            Console.WriteLine(msg.Message);
+            return msg;
         }
 
-        public static async Task<bool> CreateDownloadChannel(int id, WebSocket webSocket) {
+        public static bool CreateDownloadChannel(int id, WebSocket webSocket) {
+            TddsSvcMsg msg;
             // Return false if id dose not exist.
             if (!UploadChannels.Keys.Contains(id)) {
-                Console.WriteLine($"Cannot create downloading channel {id} because {id} is not available.");
-                return false;
-            }
-            // Return false if image format dose not exist.
-            if (ChannelImageFormats.TryGetValue(id, out var imageFormat)) {
-                if (imageFormat == null) {
-                    Console.WriteLine($"Connot create downloading channel {id} because ImageFormat is null.");
-                    return false;
-                }
-            } else {
-                Console.WriteLine($"Connot create downloading channel {id} because ImageFormat is null.");
+                msg = new TddsSvcMsg(MessageType.Error, $"Cannot create downloading channel {id}, because no channel with id {id}.");
+                Console.WriteLine(msg.Message);
                 return false;
             }
             // Close old download channel
             if (DownloadChannels.TryGetValue(id, out WebSocket? oldSocket)) {
                 if (oldSocket != null) {
                     Console.WriteLine($"Close channel {id} for new downloading channel.");
-                    try {
-                        await oldSocket.CloseAsync(WebSocketCloseStatus.Empty, "Close for new downloading channel.", CancellationToken.None);
-                    }catch(Exception exp) {
-                        Console.WriteLine("Error occur when close old socket. " + exp.Message);
-                    }
+                    oldSocket.Dispose();
+                    Console.WriteLine("Old downloading channel is closed.");
                 }
             }
             // Add to channel dictinary.
@@ -86,25 +89,20 @@ namespace TddsServer.General {
             return true;
         }
 
-        public static async Task RemoveDownloadChannelAsync(int id) {
+        public static TddsSvcMsg RemoveDownloadChannelAsync(int id) {
             TddsSvcMsg msg;
             if (UploadChannels.TryRemove(id, out WebSocket? socket)) {
                 socket?.Dispose();
                 msg = new TddsSvcMsg(MessageType.Success, $"Downloading channel {id} is removed successfully.");
             } else {
-                msg = new TddsSvcMsg(MessageType.Error, $"Remove downloading channel {id} failed.");
+                msg = new TddsSvcMsg(MessageType.Error, $"Remove downloading channel {id} failed. No channel with id {id}.");
             }
-            if (ServiceManager.TddsSocket != null)
-                await ServiceManager.SendAsync(ServiceManager.TddsSocket, msg.GetJson());
-            if (ServiceManager.ConsoleSocket != null)
-                await ServiceManager.SendAsync(ServiceManager.ConsoleSocket, msg.GetJson());
             Console.WriteLine(msg.Message);
+            return msg;
         }
 
         public static async Task RetransmitToDownloadChannel(int id, WebSocket webSocket) {
             var buffer = new byte[10240];
-            DateTime time0 = DateTime.Now;
-            int count = 0;
             Console.WriteLine($"Retransmit channel {id}.");
             try {
                 WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
@@ -116,18 +114,7 @@ namespace TddsServer.General {
                                 result.MessageType,
                                 result.EndOfMessage,
                                 CancellationToken.None);
-
                     }
-                    //if ((DateTime.Now - time0).TotalMilliseconds > 2500) {
-                    //    Console.WriteLine($"Received data count:{result.Count}");
-                    //    time0 = DateTime.Now;
-                    //}
-
-                    //if (result.EndOfMessage) {
-                    //    Console.WriteLine($"Message end. Data count:{count}");
-                    //    count = 0;
-                    //}
-                    //count += result.Count;
                     result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 }
                 await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
@@ -135,10 +122,11 @@ namespace TddsServer.General {
             }catch(Exception exp) {
                 Console.WriteLine(exp.ToString());
             } finally {
-                await RemoveUploadChannelAsync(id);
-                Console.WriteLine($"Channel {id} is removed.");
+                RemoveUploadChannelAsync(id);
+                Console.WriteLine($"Channel {id} is closed.");
             }
         }
+
         public static async Task HoldingDownloadChannel(int id, WebSocket webSocket) {
             var buffer = new byte[1024];
             try {
@@ -150,19 +138,30 @@ namespace TddsServer.General {
             } catch (Exception exp) {
                 Console.WriteLine(exp.Message);
             } finally {
-                await RemoveDownloadChannelAsync(id);
+                RemoveDownloadChannelAsync(id);
             }
         }
 
-        public static async Task<TddsSvcMsg> SetChannelImageFormat(ChannelImageFormat channelImageFormat) {
-            return await Task.Run(() => {
-                if (UploadChannels.Keys.Contains(channelImageFormat.ChannelId)) {
-                    ChannelImageFormats[channelImageFormat.ChannelId] = channelImageFormat;
-                    return new TddsSvcMsg(MessageType.SetChannelImageFormat, $"Set format of channel {channelImageFormat.ChannelId} successfully.");
-                } else {
-                    return new TddsSvcMsg(MessageType.Error, $"There is no channel with Id:{channelImageFormat.ChannelId}");
-                }
-            });
+        public static TddsSvcMsg GetChannelImageFormat(int channelId) {
+            TddsSvcMsg msg;
+            if (ChannelImageFormats.TryGetValue(channelId, out ChannelImageFormat? format)) {
+                msg = new TddsSvcMsg(MessageType.Success, "Success", format);
+            } else {
+                msg= new TddsSvcMsg(MessageType.Error, $"No channel with ID:{channelId}.");
+            }
+            Console.WriteLine(msg.Message);
+            return msg;
+        }
+
+        public static TddsSvcMsg GetAllChannelsImageFormats() {
+            TddsSvcMsg msg;
+            if (ChannelImageFormats == null || ChannelImageFormats.Count == 0) {
+                msg = new TddsSvcMsg(MessageType.Error, "No any channels.");
+            } else {
+                msg = new TddsSvcMsg(MessageType.Success, $"Got image format of {ChannelImageFormats.Count} channels.", ChannelImageFormats.Values.ToList());
+            }
+            Console.WriteLine(msg.Message);
+            return msg;
         }
     }
 }

@@ -15,12 +15,12 @@ namespace TddsServer.General {
         public static async Task<bool> TddsLogin(WebSocket webSocket) {
             TddsSvcMsg msg;
             if (TddsSocket != null) {
-                msg = new TddsSvcMsg(MessageType.TddsConnected, "Login failed, TDDS is already connected.");
+                msg = new TddsSvcMsg(MessageType.UploaderOnline, "Login failed, TDDS is already connected.");
                 await SendToSocket(webSocket, msg.GetJson());
                 return false;
             } else {
                 TddsSocket = webSocket;
-                msg = new TddsSvcMsg(MessageType.TddsConnected, "TDDS login succeeded.");
+                msg = new TddsSvcMsg(MessageType.UploaderOnline, "TDDS login succeeded.");
                 await SendToSocket(TddsSocket, msg.GetJson());
                 await TddsToClient(msg.GetJson());
                 return true;
@@ -31,7 +31,7 @@ namespace TddsServer.General {
         #region TDDS Logout
         public static async void TddsLogout() {
             TddsSocket = null;
-            TddsSvcMsg msg = new TddsSvcMsg(MessageType.TddsDisconnected, "TDDS disconnected.");
+            TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOffline, "TDDS disconnected.");
             await TddsToClient(msg.GetJson());
         }
         #endregion
@@ -46,7 +46,7 @@ namespace TddsServer.General {
             bool success = ClientSocket.TryAdd(id, webSocket);
             if (success) {
                 // A new logged in message.
-                TddsSvcMsg msg = new TddsSvcMsg(MessageType.ConsoleConnected, $"Id:{id} connected.");
+                TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOnline, $"Id:{id} connected.");
 
                 // Send logged in message to TDDS.
                 if (TddsSocket != null) {

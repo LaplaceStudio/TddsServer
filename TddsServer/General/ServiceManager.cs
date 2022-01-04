@@ -6,122 +6,131 @@ using TddsServer.Objects;
 namespace TddsServer.General {
     public class ServiceManager {
 
-        private static string? TddsConnectionId = null;
-        private static string? ConsoleConnectionId = null;
-        public static WebSocket? TddsSocket = null;
-        public static WebSocket? ConsoleSocket = null;
+        private static string? UploaderId = null;
+        private static string? DownloaderId = null;
+        public static WebSocket? UploaderSocket = null;
+        public static WebSocket? DownloaderSocket = null;
 
         private static readonly ILogger logger;
 
-        public static async void ConnectAsTdds(HttpContext httpContext, WebSocket webSocket) {
-            if (TddsSocket != null) {
-                TddsSocket.Abort();
-
+        public async void ConnectAsUploader(HttpContext httpContext, WebSocket webSocket) {
+            if (UploaderSocket != null) {
+                Console.WriteLine("Uploader already exists. Aborting old uploader...");
+                UploaderSocket.Abort();
+                Console.WriteLine("Aborted old uploader.");
                 //logger.LogInformation($"Abort TDDS websocket, Id:{TddsConnectionId}");
             }
-            TddsSocket = webSocket;
-            TddsConnectionId = httpContext.Connection.RemoteIpAddress == null
+            UploaderSocket = webSocket;
+            UploaderId = httpContext.Connection.RemoteIpAddress == null
                 ? httpContext.Connection.Id
                 : $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Connection.RemotePort}";
-            TddsSvcMsg msg = new TddsSvcMsg(MessageType.TddsConnected, $"Login success. Id:{TddsConnectionId}.");
+            TddsSvcMsg msg = new TddsSvcMsg(MessageType.UploaderOnline, $"Connect as uploader successfully. Id:{UploaderId}.");
+            if (DownloaderSocket != null)
+                await TddsService.SendMsgAsync(DownloaderSocket, msg);
+            await TddsService.SendMsgAsync(UploaderSocket, msg);
 
-            await SendAsync(TddsSocket, msg.GetJson());
-            if (ConsoleSocket != null)
-                await SendAsync(ConsoleSocket, msg.GetJson());
-
+            Console.WriteLine(msg.Message);
+            
             //logger.LogInformation($"Id:{TddsConnectionId} connected service as TDDS.");
         }
 
-        public static async void DisconnectAsTdds() {
-            TddsSvcMsg msg = new TddsSvcMsg(MessageType.TddsDisconnected, "TDDS logged out.");
-            if (ConsoleSocket != null) {
-                await SendAsync(ConsoleSocket, msg.GetJson());
+        public async void DisconnectAsUploader() {
+            TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader logged out.");
+            if (DownloaderSocket != null) {
+                await TddsService.SendMsgAsync(DownloaderSocket, msg);
             }
-            TddsSocket?.Abort();
             //logger.LogInformation($"Id:{TddsConnectionId} disconnected service.");
 
-            TddsSocket = null;
-            TddsConnectionId = null;
+            UploaderSocket = null;
+            UploaderId = null;
+            Console.WriteLine(msg.Message);
         }
 
-        public static async void ConnectAsConsole(HttpContext httpContext, WebSocket webSocket) {
-            if (ConsoleSocket != null) {
-                ConsoleSocket.Abort();
-
+        public async void ConnectAsDownloader(HttpContext httpContext, WebSocket webSocket) {
+            if (DownloaderSocket != null) {
+                Console.WriteLine("Downloader already exists. Aborting old downloader.");
+                DownloaderSocket.Abort();
+                Console.WriteLine("Aborted old downloader.");
                 //logger.LogInformation($"Abort Console websocket, Id:{TddsConnectionId}");
             }
-            ConsoleSocket = webSocket;
-            ConsoleConnectionId = httpContext.Connection.RemoteIpAddress == null
+            DownloaderSocket = webSocket;
+            DownloaderId = httpContext.Connection.RemoteIpAddress == null
                 ? httpContext.Connection.Id
                 : $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Connection.RemotePort}";
-            TddsSvcMsg msg = new TddsSvcMsg(MessageType.ConsoleConnected, $"Login success. Id:{ConsoleConnectionId}.");
-            if (TddsSocket != null)
-                await SendAsync(TddsSocket, msg.GetJson());
-            await SendAsync(ConsoleSocket, msg.GetJson());
+            TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOnline, $"Connect as downloader successfully. Id:{DownloaderId}.");
+            if (UploaderSocket != null)
+                await TddsService.SendMsgAsync(UploaderSocket, msg);
+            await TddsService.SendMsgAsync(DownloaderSocket, msg);
+
+            Console.WriteLine(msg.Message);
         }
 
-        public static async void DisconnectAsConsole() {
-            TddsSvcMsg msg = new TddsSvcMsg(MessageType.ConsoleDisconnected, "Console logged out.");
-            if (TddsSocket != null)
-                await SendAsync(TddsSocket, msg.GetJson());
-            ConsoleSocket?.Abort();
+        public async void DisconnectAsDownloader() {
+            TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOffline, "Downloader logged out.");
+            if (UploaderSocket != null)
+                await SendAsync(UploaderSocket, msg.GetJson());
+            DownloaderSocket?.Abort();
             //logger.LogInformation($"Id:{TddsConnectionId} disconnected service.");
 
-            ConsoleSocket = null;
-            ConsoleConnectionId = null;
+            DownloaderSocket = null;
+            DownloaderId = null;
+            Console.WriteLine(msg.Message);
         }
 
-        public static async Task SendAsync(WebSocket webSocket,string message) {
+        public async Task SendAsync(WebSocket webSocket,string message) {
             if (webSocket == null) return;
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[4096]);
-            buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(message));
-            await webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(message));
+            ArraySegment<byte> lenBytes = new ArraySegment<byte>(BitConverter.GetBytes(buffer.Count).Reverse().ToArray());
+            // Send content length
+            await webSocket.SendAsync(lenBytes, WebSocketMessageType.Binary, false, CancellationToken.None);
+            // Send content
+            await webSocket.SendAsync(buffer, WebSocketMessageType.Binary, true, CancellationToken.None);
         }
 
-        public static async Task RetransmitToTdds(WebSocket consoleSocket) {
-            if (TddsSocket == null) {
-                TddsSvcMsg msg = new TddsSvcMsg(MessageType.TddsDisconnected, "TDDS is not connected.");
-                await SendAsync(consoleSocket, msg.GetJson());
-            }
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await consoleSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        public async Task RetransmitToUploader(WebSocket downloaderSocket) {
+            var buffer = new byte[4096];
+            WebSocketReceiveResult result = await downloaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             while (!result.CloseStatus.HasValue) {
-                if (TddsSocket == null) {
-                    await SendAsync(consoleSocket, new TddsSvcMsg(MessageType.TddsDisconnected, "TDDS is not connected.").GetJson());
-                } else { 
-                    await TddsSocket.SendAsync(
+                if (UploaderSocket == null) {
+                    // Receive and not send if Uploader is null.
+                    if (result.EndOfMessage) {
+                        await TddsService.SendMsgAsync(downloaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+                    }
+                } else {
+                    // Received and send if Uploader is not null.
+                    await UploaderSocket.SendAsync(
                         new ArraySegment<byte>(buffer, 0, result.Count),
                         result.MessageType,
                         result.EndOfMessage,
                        CancellationToken.None);
                 }
-                result = await consoleSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                result = await downloaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
-            await consoleSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            DisconnectAsConsole();
+            await downloaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            DisconnectAsDownloader();
         }
 
-        public static async Task RetransmitToConsole(WebSocket tddsSocket) {
-            if(ConsoleSocket == null) {
-                TddsSvcMsg msg = new TddsSvcMsg(MessageType.ConsoleDisconnected, "Console is not connected.");
-                await SendAsync(tddsSocket, msg.GetJson());
-            }
-            var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await tddsSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        public async Task RetransmitToDownloader(WebSocket uploaderSocket) {
+            var buffer = new byte[4096];
+            WebSocketReceiveResult result = await uploaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             while (!result.CloseStatus.HasValue) {
-                if (ConsoleSocket == null) {
-                    await SendAsync(tddsSocket, new TddsSvcMsg(MessageType.ConsoleDisconnected, "Console is not connected.").GetJson());
+                if (DownloaderSocket == null) {
+                    // Receive and not send if Downloader is null.
+                    if (result.EndOfMessage) {
+                        await TddsService.SendMsgAsync(uploaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+                    }
                 } else {
-                    await ConsoleSocket.SendAsync(
+                    // Received and send if Downloader is not null.
+                    await DownloaderSocket.SendAsync(
                         new ArraySegment<byte>(buffer, 0, result.Count),
                         result.MessageType,
                         result.EndOfMessage,
                         CancellationToken.None);
                 }
-                result = await tddsSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                result = await uploaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
-            await tddsSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-            DisconnectAsTdds();
+            await uploaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            DisconnectAsUploader();
         }
 
     }

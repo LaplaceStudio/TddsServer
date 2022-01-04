@@ -4,25 +4,27 @@ namespace TddsServer.Objects {
 
     public enum MessageType {
         Error = -1,
-        Success,
-        TddsConnected,
-        TddsDisconnected,
-        ConsoleConnected,
-        ConsoleDisconnected,
+        Success=0,
+        UploaderOnline=1,
+        UploaderOffline=2,
+        DownloaderOnline=3,
+        DownloaderOffline=4,
 
         #region TDDS and Console Message Type
-
-
+        StartTDDS=10,
+        StopTDDS=11,
+        OpenChannel=12,
+        CloseChannel=13,
 
         #endregion
 
         #region TDDS Service API Message Type
         ServiceOnline=100,
-        TddsOnline,
-        ConsoleOnline,
-        GetChannelIds,
-        SetChannelImageFormat,
-        GetChannelImageFormat,
+        TddsOnline=101,
+        ConsoleOnline=102,
+        GetChannelIds=103,
+        GetChannelImageFormat=104,
+        GetAllChannelsImageFormat=105,
 
 
         #endregion
@@ -38,13 +40,17 @@ namespace TddsServer.Objects {
 
         [JsonProperty("Data")]
         public object Data { get; set; }
+        public DateTime DateTime { get; set; }
 
         [JsonConstructor]
-        public TddsSvcMsg() { }
+        public TddsSvcMsg() {
+            DateTime = DateTime.Now;
+        }
 
         public TddsSvcMsg(MessageType type, string message) {
             Type = type;
             Message = message;
+            DateTime = DateTime.Now;
         }
 
         public TddsSvcMsg(MessageType type, string message, object data) : this(type, message) {
@@ -53,6 +59,10 @@ namespace TddsServer.Objects {
 
         public string GetJson() {
             return JsonConvert.SerializeObject(this);
+        }
+
+        public static TddsSvcMsg UnresolvedMsg() {
+            return new TddsSvcMsg(MessageType.Error, "Unresolved message.");
         }
 
         public static TddsSvcMsg InvalidParamMsg(string paramName) {

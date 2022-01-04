@@ -9,8 +9,11 @@ namespace TddsServer.Controllers {
         public async Task Get() {
             if (HttpContext.WebSockets.IsWebSocketRequest) {
                 using WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                ServiceManager.ConnectAsConsole(HttpContext, webSocket);
-                await ServiceManager.RetransmitToTdds(webSocket);
+
+                // Connect as downloader
+                TddsService.ConsoleManager.ConnectAsDownloader(HttpContext, webSocket);
+                // Retransmit
+                await TddsService.ConsoleManager.RetransmitToUploader(webSocket);
             } else {
                 HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             }
