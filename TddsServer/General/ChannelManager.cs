@@ -7,11 +7,11 @@ namespace TddsServer.General {
         /// <summary>
         /// 此服务支持的最大通道数。可依据实测网络环境更改此值。
         /// </summary>
-        private const int FIXED_MAX_CHANNELS_COUNT = 8;
+        private const int FIXED_MAX_CHANNELS_COUNT = 32;
         /// <summary>
         /// 客户端可用最大通道数，上限为FIXED_MAX_CHANNELS_COUNT，
         /// </summary>
-        private static int MAX_CHANNELS_COUNT = 4;
+        private static int MAX_CHANNELS_COUNT = 32;
 
         private static ConcurrentDictionary<int, WebSocket> UploadChannels = new ConcurrentDictionary<int, WebSocket>();
         private static ConcurrentDictionary<int, WebSocket> DownloadChannels = new ConcurrentDictionary<int, WebSocket>();

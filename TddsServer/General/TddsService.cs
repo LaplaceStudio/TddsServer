@@ -14,7 +14,7 @@ namespace TddsServer.General {
             }
             switch (msg.Type) {
                 case MessageType.ServiceOnline:
-                    return new TddsSvcMsg(MessageType.Success, "Service is online.");
+                    return new TddsSvcMsg(MessageType.Success, "Service is online.", true);
                 case MessageType.TddsOnline:
                     return new TddsSvcMsg(MessageType.Success, "TDDS is " + (ConsoleManager.IsUploaderOnline ? "online" : "offline"), ConsoleManager.IsUploaderOnline);
                 case MessageType.ConsoleOnline:
