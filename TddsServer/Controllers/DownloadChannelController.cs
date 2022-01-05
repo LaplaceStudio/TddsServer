@@ -10,7 +10,7 @@ namespace TddsServer.Controllers {
             if (HttpContext.WebSockets.IsWebSocketRequest) {
                 using WebSocket webSocket = await
                                    HttpContext.WebSockets.AcceptWebSocketAsync();
-                bool success = ChannelManager.CreateDownloadChannel(id, webSocket);
+                bool success = await ChannelManager.CreateDownloadChannel(id, webSocket);
                 if (success)
                     await ChannelManager.HoldingDownloadChannel(id, webSocket);
                 else

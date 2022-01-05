@@ -18,6 +18,8 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwaggerUI();
 }
 
+
+
 // WebSocket
 var webSocketOptions = new WebSocketOptions() {
     KeepAliveInterval = TimeSpan.FromSeconds(120),
@@ -32,4 +34,4 @@ app.UseStaticFiles();
 
 app.MapControllers();
 
-app.Run();
+app.Run("http://*:2626");

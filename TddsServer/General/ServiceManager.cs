@@ -18,10 +18,10 @@ namespace TddsServer.General {
 
         public async void ConnectAsUploader(HttpContext httpContext, WebSocket webSocket) {
             if (UploaderSocket != null) {
-                Console.WriteLine("Uploader already exists. Aborting old uploader...");
+                await Logger.Log(LogType.Info,"Uploader already exists. Aborting old uploader...");
                 UploaderSocket.Abort();
-                Console.WriteLine("Aborted old uploader.");
-                _ = Logger.Log(LogType.Info, "Old uploader socket is aborted.");
+                await Logger.Log(LogType.Info,"Aborted old uploader.");
+                await Logger.Log(LogType.Info, "Old uploader socket is aborted.");
             }
             UploaderSocket = webSocket;
             UploaderId = httpContext.Connection.RemoteIpAddress == null
@@ -32,9 +32,9 @@ namespace TddsServer.General {
                 await TddsService.SendMsgAsync(DownloaderSocket, msg);
             await TddsService.SendMsgAsync(UploaderSocket, msg);
 
-            Console.WriteLine(msg.Message);
+            await Logger.Log(LogType.Info,msg.Message);
 
-           _ = Logger.Log(LogType.Info, $"Id:{UploaderId} connected service as uploader.");
+            await Logger.Log(LogType.Info, $"Id:{UploaderId} connected service as uploader.");
         }
 
         public async void DisconnectAsUploader() {
@@ -46,14 +46,14 @@ namespace TddsServer.General {
 
             UploaderSocket = null;
             UploaderId = null;
-            Console.WriteLine(msg.Message);
+            await Logger.Log(LogType.Info,msg.Message);
         }
 
         public async void ConnectAsDownloader(HttpContext httpContext, WebSocket webSocket) {
             if (DownloaderSocket != null) {
-                Console.WriteLine("Downloader already exists. Aborting old downloader.");
+                await Logger.Log(LogType.Info,"Downloader already exists. Aborting old downloader.");
                 DownloaderSocket.Abort();
-                Console.WriteLine("Aborted old downloader.");
+                await Logger.Log(LogType.Info,"Aborted old downloader.");
                 //logger.LogInformation($"Abort Console websocket, Id:{TddsConnectionId}");
             }
             DownloaderSocket = webSocket;
@@ -65,7 +65,7 @@ namespace TddsServer.General {
                 await TddsService.SendMsgAsync(UploaderSocket, msg);
             await TddsService.SendMsgAsync(DownloaderSocket, msg);
 
-            Console.WriteLine(msg.Message);
+            await Logger.Log(LogType.Info,msg.Message);
         }
 
         public async void DisconnectAsDownloader() {
@@ -77,7 +77,7 @@ namespace TddsServer.General {
 
             DownloaderSocket = null;
             DownloaderId = null;
-            Console.WriteLine(msg.Message);
+            await Logger.Log(LogType.Info,msg.Message);
         }
 
         public async Task RetransmitToUploader(WebSocket downloaderSocket) {
@@ -103,7 +103,7 @@ namespace TddsServer.General {
                 await downloaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
                 DisconnectAsDownloader();
             }catch(Exception exp) {
-                Console.WriteLine("Connection is closed. " + exp.Message);
+                await Logger.Log(LogType.Error,"Connection is closed. " + exp.StackTrace);
             }
         }
 
@@ -130,7 +130,7 @@ namespace TddsServer.General {
                 await uploaderSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
                 DisconnectAsUploader();
             }catch(Exception exp) {
-                Console.WriteLine("Connection is closed. "+ exp.Message);
+                await Logger.Log(LogType.Info,"Connection is closed. "+ exp.StackTrace);
             }
         }
 

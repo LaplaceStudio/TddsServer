@@ -13,7 +13,7 @@ namespace TddsServer.Controllers {
                 using WebSocket webSocket = await
                                    HttpContext.WebSockets.AcceptWebSocketAsync();
 
-                TddsSvcMsg msg = ChannelManager.CreateUploadChannel(webSocket, channelId, imageWidth, imageHeight, pixelFormat);
+                TddsSvcMsg msg = await ChannelManager.CreateUploadChannel(webSocket, channelId, imageWidth, imageHeight, pixelFormat);
                 if (msg.Type == MessageType.Success) {
                     await ChannelManager.RetransmitToDownloadChannel(channelId, webSocket);
                 } else {

@@ -19,9 +19,9 @@ namespace TddsServer.Controllers {
         /// <param name="msg"></param>
         /// <returns></returns>
         [HttpPost("/service")]
-        public ActionResult<TddsSvcMsg> Get([FromBody] TddsSvcMsg msg) {
+        public async Task<ActionResult<TddsSvcMsg>> Get([FromBody] TddsSvcMsg msg) {
             if (msg == null) return BadRequest();
-            return TddsService.Handle(msg);
+            return await TddsService.Handle(msg);
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace TddsServer.Controllers {
         }
 
         private async Task Holding(HttpContext httpContext, WebSocket webSocket) {
-            Console.WriteLine("Connection created for TDDS service.");
+            await Logger.Log(LogType.Info, "Connection created for TDDS service.");
             var lenBytes = new byte[2];
             try {
                 WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(lenBytes), CancellationToken.None);
@@ -49,31 +49,31 @@ namespace TddsServer.Controllers {
                     int len = BitConverter.ToUInt16(lenBytes.Reverse().ToArray(), 0);
                     if (len > 0) {
                         byte[] buffer = new byte[len];
-                        Console.WriteLine($"Attempt to receive data of length {len}...");
+                        await Logger.Log(LogType.Info, $"Attempt to receive data of length {len}...");
                         result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                         string content = Encoding.UTF8.GetString(buffer);
-                        Console.WriteLine($"Received content:{content}");
+                        await Logger.Log(LogType.Info, $"Received content:{content}");
                         try {
                             TddsSvcMsg? msg = JsonConvert.DeserializeObject(content, typeof(TddsSvcMsg)) as TddsSvcMsg;
-                            Console.WriteLine("Attempt to handle this request...");
+                            await Logger.Log(LogType.Info, "Attempt to handle this request...");
                             // Handle TddsSvcMsg
-                            TddsSvcMsg resultMsg = TddsService.Handle(msg);
-                            Console.WriteLine($"Request handled. Result:{resultMsg.GetJson()}");
+                            TddsSvcMsg resultMsg = await TddsService.Handle(msg);
+                            await Logger.Log(LogType.Info, $"Request handled. Result:{resultMsg.GetJson()}");
                             // Return handle result
                             await TddsService.SendMsgAsync(webSocket, resultMsg);
-                            Console.WriteLine("Result sent to user.");
+                            await Logger.Log(LogType.Info, "Result sent to user.");
                         } catch (Exception exp) {
                             await TddsService.SendMsgAsync(webSocket, TddsSvcMsg.UnresolvedMsg());
-                            Console.WriteLine(TddsSvcMsg.UnresolvedMsg().Message);
-                            Console.WriteLine(exp.Message);
+                            await Logger.Log(LogType.Error, TddsSvcMsg.UnresolvedMsg().Message);
+                            await Logger.Log(LogType.Error, exp.StackTrace);
                         }
                     }
                     result = await webSocket.ReceiveAsync(new ArraySegment<byte>(lenBytes), CancellationToken.None);
                 }
                 await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-                Console.WriteLine("Connection is closed.");
+                await Logger.Log(LogType.Info,"Connection is closed.");
             }catch(Exception outExp) {
-                Console.WriteLine("Connection is closed. " + outExp.Message);
+                await Logger.Log(LogType.Info, "Connection is closed. " + outExp.Message);
             }
         }
 

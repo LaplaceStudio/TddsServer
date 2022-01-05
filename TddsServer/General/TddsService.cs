@@ -8,7 +8,7 @@ namespace TddsServer.General {
         public static ServiceManager ConsoleManager = new ServiceManager();
         public static ServiceManager NoticeManager = new ServiceManager();
 
-        public static TddsSvcMsg Handle(TddsSvcMsg msg) {
+        public static async Task<TddsSvcMsg> Handle(TddsSvcMsg msg) {
             if (msg == null) {
                 return TddsSvcMsg.UnresolvedMsg();
             }
@@ -28,12 +28,12 @@ namespace TddsServer.General {
                     return new TddsSvcMsg(msg.Type, $"Got {ids.Count} uploading channels.", ids);
                 case MessageType.GetChannelImageFormat:
                     if (msg.Data != null && int.TryParse(msg.Data.ToString(), out int channelId)) {
-                        return ChannelManager.GetChannelImageFormat(channelId);
+                        return await ChannelManager.GetChannelImageFormat(channelId);
                     } else {
                         return TddsSvcMsg.InvalidParamMsg("channelId");
                     }
                 case MessageType.GetAllChannelsImageFormat:
-                    return ChannelManager.GetAllChannelsImageFormats();
+                    return await ChannelManager.GetAllChannelsImageFormats();
                 default:
                     return new TddsSvcMsg(MessageType.Error, "Unknow message type.");
             }

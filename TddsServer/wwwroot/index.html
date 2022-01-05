@@ -28,19 +28,22 @@
     <p id="stateLabel">Ready to connect...</p>
     <div>
         <label for="connectionUrl">WebSocket Server URL:</label>
-        <input id="connectionUrl" />
-        <button id="connectButton" type="submit">Connect</button>
+        <br />
+        <input id="connectionUrl" style="width: 1000px" />
+        <br />
+        <button id="connectButton" type="submit" style="width: 100px">Connect</button>
+        <button id="closeButton" disabled style="width: 100px">Close Socket</button>
     </div>
     <p></p>
     <div>
         <label for="sendMessage">Message to send:</label>
-        <input id="sendMessage" disabled />
-        <button id="sendButton" type="submit" disabled>Send</button>
-        <button id="closeButton" disabled>Close Socket</button>
+        <br />
+        <input id="sendMessage" disabled style="width: 900px" />
+        <button id="sendButton" type="submit" disabled style="width: 100px">Send</button>
     </div>
 
     <h2>Communication Log</h2>
-    <table style="width: 800px">
+    <table style="width: 1000px">
         <thead>
             <tr>
                 <td style="width: 100px">From</td>
@@ -65,7 +68,7 @@
         var scheme = document.location.protocol === "https:" ? "wss" : "ws";
         var port = document.location.port ? (":" + document.location.port) : "";
 
-        connectionUrl.value = scheme + "://" + document.location.hostname + port + "/tdds" ;
+        connectionUrl.value = scheme + "://" + document.location.hostname + port + "/echo" ;
 
         function updateState() {
             function disable() {
