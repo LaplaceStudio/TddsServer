@@ -10,6 +10,6 @@
     public enum PixelFormatType {
         UNKNOWN,
         RGB,
-        BGRA,
+        RGBA,
     }
 }

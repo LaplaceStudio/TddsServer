@@ -6,7 +6,7 @@
         private static string DateFormat = "yy-MM-dd HH:mm:ss.fff";
 
 
-        private static async Task<bool> Init() {
+        public static async Task<bool> Init() {
             try {
                 if (LogStream == null) {
                     string dir = Path.Combine(Directory.GetCurrentDirectory(), "logs");
