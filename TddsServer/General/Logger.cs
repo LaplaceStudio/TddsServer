@@ -41,7 +41,7 @@
             if (LogStream == null || Writer == null) {
                 if (!await Init()) return "";
             }
-            string content = $"[{type.ToString().Substring(0, 1).ToUpper()}]{DateTime.Now.ToString(DateFormat)}>>{text}";
+            string content = $"[{type.ToString()[..1].ToUpper()}]{DateTime.Now.ToString(DateFormat)}>>{text}";
             if (type == LogType.Debug) {
                 // No neccessary to write debug message into log file.
                 Console.WriteLine(content);
@@ -66,7 +66,7 @@
                     return;
                 }
             }
-            string content = $"[{type.ToString().Substring(0, 1).ToUpper()}]{DateTime.Now.ToString(DateFormat)}>>{text}";
+            string content = $"[{type.ToString()[..1].ToUpper()}]{DateTime.Now.ToString(DateFormat)}>>{text}";
             Console.WriteLine(content);
             Writer?.WriteLine(content);
             Writer?.Flush();

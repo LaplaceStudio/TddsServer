@@ -23,7 +23,7 @@ namespace TddsServer.General {
         }
 
         public static async Task<TddsSvcMsg> CreateUploadChannel(WebSocket webSocket, int channelId, int imageWidth, int imageHeight, int pixelFormt) {
-            TddsSvcMsg msg= new TddsSvcMsg();
+            TddsSvcMsg msg;
             if (UploadChannels.Keys.Count >= MAX_CHANNELS_COUNT) {
                 msg = new TddsSvcMsg(MessageType.Error, "The maximum number of channels has been reached.");
                 await Logger.Log(LogType.Info,msg.Message);
@@ -70,7 +70,7 @@ namespace TddsServer.General {
         public static async Task<bool> CreateDownloadChannel(int id, WebSocket webSocket) {
             TddsSvcMsg msg;
             // Return false if id dose not exist.
-            if (!UploadChannels.Keys.Contains(id)) {
+            if (!UploadChannels.ContainsKey(id)) {
                 msg = new TddsSvcMsg(MessageType.Error, $"Cannot create downloading channel {id}, because no channel with id {id}.");
                 await Logger.Log(LogType.Info,msg.Message);
                 return false;
@@ -155,7 +155,7 @@ namespace TddsServer.General {
 
         public static async Task<TddsSvcMsg> GetAllChannelsImageFormats() {
             TddsSvcMsg msg;
-            if (ChannelImageFormats == null || ChannelImageFormats.Count == 0) {
+            if (ChannelImageFormats == null || ChannelImageFormats.IsEmpty) {
                 msg = new TddsSvcMsg(MessageType.Error, "No any channels.");
             } else {
                 msg = new TddsSvcMsg(MessageType.Success, $"Got image format of {ChannelImageFormats.Count} channels.", ChannelImageFormats.Values.ToList());

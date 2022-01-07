@@ -34,6 +34,40 @@ namespace TddsServer.General {
                     }
                 case MessageType.GetAllChannelsImageFormat:
                     return await ChannelManager.GetAllChannelsImageFormats();
+
+
+                #region Account
+
+                case MessageType.HasAdminLoginInfo:
+                    return AccountManager.HasAdminLoginInfo();
+                case MessageType.SetAdminLoginInfo:
+                    if (msg.Data != null && msg.Data is AccountInfo info)
+                        return AccountManager.SetAdminLoginInfo(info);
+                    else
+                        return TddsSvcMsg.InvalidParamMsg("adminLoginInfo");
+                case MessageType.GetAllAccount:
+                    return AccountManager.GetAllAccount();
+                case MessageType.RigisterAccount:
+                    if (msg.Data != null && msg.Data is AccountInfo newAcc)
+                        return AccountManager.RigisterAccount(newAcc);
+                    else
+                        return TddsSvcMsg.InvalidParamMsg("AccountInfo");
+                case MessageType.DestoryAccount:
+                    if (msg.Data != null && msg.Data is string uName)
+                        return AccountManager.DestoryAccount(uName);
+                    else
+                        return TddsSvcMsg.InvalidParamMsg("UserName");
+                case MessageType.ResetAccount:
+                    if (msg.Data != null && msg.Data is AccountResetInfo resetInfo)
+                        return AccountManager.ResetAccount(resetInfo);
+                    else
+                        return TddsSvcMsg.InvalidParamMsg("AccountResetInfo");
+                case MessageType.UserLogIn:
+                    if (msg.Data != null && msg.Data is AccountInfo acc)
+                        return AccountManager.Login(acc);
+                    else
+                        return TddsSvcMsg.InvalidParamMsg("AccountInfo");
+                #endregion
                 default:
                     return new TddsSvcMsg(MessageType.Error, "Unknow message type.");
             }

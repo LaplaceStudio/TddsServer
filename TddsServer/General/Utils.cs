@@ -2,6 +2,16 @@
 
 namespace TddsServer.General {
     public class Utils {
+
+        public static bool SaveFile(string path,string text) {
+            try {
+                File.WriteAllText(path, text);
+                return true;
+            }catch(Exception) {
+                return false;
+            }
+        }
+
         public static async Task Echo(HttpContext httpContext, WebSocket webSocket) {
             var buffer = new byte[1024 * 4];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
