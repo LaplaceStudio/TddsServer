@@ -115,7 +115,7 @@ namespace TddsServer.General {
                     if (DownloaderSocket == null) {
                         // Receive and not send if Downloader is null.
                         if (result.EndOfMessage) {
-                            await TddsService.SendMsgAsync(uploaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+                            await TddsService.SendMsgAsync(uploaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Downlaoder is not connected."));
                         }
                     } else {
                         // Received and send if Downloader is not null.

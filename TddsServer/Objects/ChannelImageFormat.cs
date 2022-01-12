@@ -11,5 +11,7 @@
         UNKNOWN,
         RGB,
         RGBA,
+        BGR,
+        BGRA
     }
 }
