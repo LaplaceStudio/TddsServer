@@ -15,7 +15,7 @@ namespace TddsServer.General {
 
         private static ConcurrentDictionary<int, WebSocket> UploadChannels = new ConcurrentDictionary<int, WebSocket>();
         private static ConcurrentDictionary<int, WebSocket> DownloadChannels = new ConcurrentDictionary<int, WebSocket>();
-        private static ConcurrentDictionary<int, ChannelImageFormat> ChannelImageFormats = new ConcurrentDictionary<int, ChannelImageFormat>();
+        private static ConcurrentDictionary<int, CameraConfig> ChannelImageFormats = new ConcurrentDictionary<int, CameraConfig>();
 
 
         public static List<int> GetChannelIds() {
@@ -40,10 +40,10 @@ namespace TddsServer.General {
                 await Logger.Log(LogType.Info,$"Old channel with id {channelId} is closed.");
             }
 
-            ChannelImageFormat format = new ChannelImageFormat() {
-                ChannelId = channelId,
-                ImageWidth = (uint)imageWidth,
-                ImageHeight = (uint)imageHeight,
+            CameraConfig format = new CameraConfig() {
+                ChannelId = channelId.ToString(),
+                ImageWidth = imageWidth,
+                ImageHeight = imageHeight,
                 PixelFormat = Enum.IsDefined(typeof(PixelFormatType), pixelFormt) ? ((PixelFormatType)pixelFormt) : PixelFormatType.UNKNOWN
             };
             UploadChannels[channelId] = webSocket;
@@ -91,7 +91,7 @@ namespace TddsServer.General {
 
         public static async Task<TddsSvcMsg> RemoveDownloadChannelAsync(int id) {
             TddsSvcMsg msg;
-            if (UploadChannels.TryRemove(id, out WebSocket? socket)) {
+            if (DownloadChannels.TryRemove(id, out WebSocket? socket)) {
                 socket?.Dispose();
                 msg = new TddsSvcMsg(MessageType.Success, $"Downloading channel {id} is removed successfully.");
             } else {
@@ -108,12 +108,18 @@ namespace TddsServer.General {
                 WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 while (!result.CloseStatus.HasValue) {
                     if (DownloadChannels.TryGetValue(id, out WebSocket? downloadSocket)) {
-                        if (downloadSocket != null && downloadSocket.State==WebSocketState.Open)
+                        if (downloadSocket != null && downloadSocket.State == WebSocketState.Open) {
+                            try {
                             await downloadSocket.SendAsync(
                                 new ArraySegment<byte>(buffer, 0, result.Count),
                                 result.MessageType,
                                 result.EndOfMessage,
                                 CancellationToken.None);
+
+                            }catch(Exception exp) {
+                               await Logger.Log(LogType.Error, exp.Message);
+                            }
+                        }
                     }
                     result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 }
@@ -144,7 +150,7 @@ namespace TddsServer.General {
 
         public static async Task<TddsSvcMsg> GetChannelImageFormat(int channelId) {
             TddsSvcMsg msg;
-            if (ChannelImageFormats.TryGetValue(channelId, out ChannelImageFormat? format)) {
+            if (ChannelImageFormats.TryGetValue(channelId, out CameraConfig? format)) {
                 msg = new TddsSvcMsg(MessageType.Success, "Success", format);
             } else {
                 msg= new TddsSvcMsg(MessageType.Error, $"No channel with ID:{channelId}.");

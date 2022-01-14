@@ -87,16 +87,24 @@ namespace TddsServer.General {
                 while (!result.CloseStatus.HasValue) {
                     if (UploaderSocket == null) {
                         // Receive and not send if Uploader is null.
-                        if (result.EndOfMessage) {
-                            await TddsService.SendMsgAsync(downloaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+                        try {
+                            if (result.EndOfMessage) {
+                                await TddsService.SendMsgAsync(downloaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader is not connected."));
+                            }
+                        }catch(Exception exp) {
+                            await Logger.Log(LogType.Error, exp.Message);
                         }
                     } else {
                         // Received and send if Uploader is not null.
-                        await UploaderSocket.SendAsync(
-                            new ArraySegment<byte>(buffer, 0, result.Count),
-                            result.MessageType,
-                            result.EndOfMessage,
-                           CancellationToken.None);
+                        try {
+                            await UploaderSocket.SendAsync(
+                                new ArraySegment<byte>(buffer, 0, result.Count),
+                                result.MessageType,
+                                result.EndOfMessage,
+                               CancellationToken.None);
+                        }catch(Exception exp) {
+                            await Logger.Log(LogType.Error,exp.Message);
+                        }
                     }
                     result = await downloaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 }
@@ -114,16 +122,24 @@ namespace TddsServer.General {
                 while (!result.CloseStatus.HasValue) {
                     if (DownloaderSocket == null) {
                         // Receive and not send if Downloader is null.
-                        if (result.EndOfMessage) {
-                            await TddsService.SendMsgAsync(uploaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Downlaoder is not connected."));
+                        try {
+                            if (result.EndOfMessage) {
+                                await TddsService.SendMsgAsync(uploaderSocket, new TddsSvcMsg(MessageType.DownloaderOffline, "Downlaoder is not connected."));
+                            }
+                        } catch (Exception exp) { 
+                            await Logger.Log(LogType.Error, exp.Message);
                         }
                     } else {
                         // Received and send if Downloader is not null.
-                        await DownloaderSocket.SendAsync(
-                            new ArraySegment<byte>(buffer, 0, result.Count),
-                            result.MessageType,
-                            result.EndOfMessage,
-                            CancellationToken.None);
+                        try {
+                            await DownloaderSocket.SendAsync(
+                                new ArraySegment<byte>(buffer, 0, result.Count),
+                                result.MessageType,
+                                result.EndOfMessage,
+                                CancellationToken.None);
+                        } catch (Exception exp) { 
+                            await Logger.Log(LogType.Error,exp.Message);
+                        }
                     }
                     result = await uploaderSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 }
