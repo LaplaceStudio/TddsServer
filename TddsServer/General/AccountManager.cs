@@ -109,6 +109,25 @@ namespace TddsServer.General {
                 return new TddsSvcMsg(MessageType.Error, $"Error occur when reset account named {info.UserName}. " + ex.Message);
             }
         }
+        public static TddsSvcMsg ModifyAccount(AccountInfo info) {
+            if (!ServerAccount.ContainsKey(info.UserName))
+                return new TddsSvcMsg(MessageType.Error, $"Account named {info.UserName} dose not exist.");
+            string oldPwd = ServerAccount[info.UserName].Password;
+            if (!EncodeText(info.OldPassword).Equals(oldPwd))
+                return new TddsSvcMsg(MessageType.Error, $"The old password of account {info.UserName} is not correct.");
+            if(!CheckAccountInfo(info)) return new TddsSvcMsg(MessageType.Error,
+                     "Create administrator account failed. The length of user name and password must be more than or equals 4 and less than  or equals 20. And the name of administrator account must be [admin].");
+
+            // Encode and modify password
+            ServerAccount[info.UserName].Password = EncodeText(info.Password);
+            try {
+                Utils.SaveFile(AccountInfosFilePath, JsonConvert.SerializeObject(ServerAccount));
+                return new TddsSvcMsg(MessageType.Success, $"Successfully modified the password of account {info.UserName}.");
+            }catch(Exception exp) {
+                ServerAccount[info.UserName].Password = oldPwd;
+                return new TddsSvcMsg(MessageType.Error, $"Error occur when reset account named {info.UserName}. " + exp.Message);
+            }
+        }
 
         public static TddsSvcMsg Login(AccountInfo account) {
             if (ServerAccount.ContainsKey(account.UserName)) {
@@ -116,7 +135,7 @@ namespace TddsServer.General {
                 if (success) {
                     return new TddsSvcMsg(MessageType.Success, $"Successfully login server as [{account.UserName}].", true);
                 } else {
-                    return new TddsSvcMsg(MessageType.Error, $"The password of account [{account.UserName}] is not corrected.", false);
+                    return new TddsSvcMsg(MessageType.Error, $"The password of account [{account.UserName}] is not correct.", false);
                 }
             } else {
                 return new TddsSvcMsg(MessageType.Error, $"The account named [{account.UserName}] dose not exist.", false);
@@ -143,11 +162,5 @@ namespace TddsServer.General {
                 || loginInfo.Password.Length > 20) return false;
             return true;
         }
-    }
-
-    public class AccountResetInfo {
-        public string AdminPassword { get; set; }
-        public string UserName { get; set; }
-        public string Password { get; set; }
     }
 }

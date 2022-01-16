@@ -27,14 +27,18 @@
 
 
         #endregion
+
+        #region Account
         HasAdminLoginInfo = 201,
         SetAdminLoginInfo,
         GetAllAccount,
         RigisterAccount,
         DestoryAccount,
         ResetAccount,
+        ModifyAccount,
         UserLogIn,
         UserLogOut,
+        #endregion
     }
 
 

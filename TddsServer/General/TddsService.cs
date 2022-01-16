@@ -62,6 +62,11 @@ namespace TddsServer.General {
                         return AccountManager.ResetAccount(resetInfo);
                     else
                         return TddsSvcMsg.InvalidParamMsg("AccountResetInfo");
+                case MessageType.ModifyAccount:
+                    if (msg.Data != null && msg.Data is AccountInfo info2)
+                        return AccountManager.ModifyAccount(info2);
+                    else
+                        return TddsSvcMsg.InvalidParamMsg("accountInfo");
                 case MessageType.UserLogIn:
                     if (msg.Data != null && msg.Data is AccountInfo acc)
                         return AccountManager.Login(acc);
