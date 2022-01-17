@@ -28,9 +28,9 @@ namespace TddsServer.General {
                 ? httpContext.Connection.Id
                 : $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Connection.RemotePort}";
             TddsSvcMsg msg = new TddsSvcMsg(MessageType.UploaderOnline, $"Connect as uploader successfully. Id:{UploaderId}.");
-            if (DownloaderSocket != null)
-                await TddsService.SendMsgAsync(DownloaderSocket, msg);
-            await TddsService.SendMsgAsync(UploaderSocket, msg);
+            //if (DownloaderSocket != null)
+            //    await TddsService.SendMsgAsync(DownloaderSocket, msg);
+            //await TddsService.SendMsgAsync(UploaderSocket, msg);
 
             await Logger.Log(LogType.Info,msg.Message);
 
@@ -39,9 +39,9 @@ namespace TddsServer.General {
 
         public async void DisconnectAsUploader() {
             TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOffline, "Uploader logged out.");
-            if (DownloaderSocket != null) {
-                await TddsService.SendMsgAsync(DownloaderSocket, msg);
-            }
+            //if (DownloaderSocket != null) {
+            //    await TddsService.SendMsgAsync(DownloaderSocket, msg);
+            //}
             //logger.LogInformation($"Id:{TddsConnectionId} disconnected service.");
 
             UploaderSocket = null;
@@ -61,18 +61,18 @@ namespace TddsServer.General {
                 ? httpContext.Connection.Id
                 : $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Connection.RemotePort}";
             TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOnline, $"Connect as downloader successfully. Id:{DownloaderId}.");
-            if (UploaderSocket != null)
-                await TddsService.SendMsgAsync(UploaderSocket, msg);
-            await TddsService.SendMsgAsync(DownloaderSocket, msg);
+            //if (UploaderSocket != null)
+            //    await TddsService.SendMsgAsync(UploaderSocket, msg);
+            //await TddsService.SendMsgAsync(DownloaderSocket, msg);
 
             await Logger.Log(LogType.Info,msg.Message);
         }
 
         public async void DisconnectAsDownloader() {
             TddsSvcMsg msg = new TddsSvcMsg(MessageType.DownloaderOffline, "Downloader logged out.");
-            if (UploaderSocket != null)
-                await TddsService.SendMsgAsync(UploaderSocket, msg);
-            DownloaderSocket?.Abort();
+            //if (UploaderSocket != null)
+            //    await TddsService.SendMsgAsync(UploaderSocket, msg);
+            //DownloaderSocket?.Abort();
             //logger.LogInformation($"Id:{TddsConnectionId} disconnected service.");
 
             DownloaderSocket = null;
