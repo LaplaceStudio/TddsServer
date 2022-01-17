@@ -45,11 +45,13 @@ namespace TddsServer.General {
                     "Admin account is initialized. Please contact server administrator if you want to reset the admin account.");
             }
             if (CheckAccountInfo(adminLoginInfo) && adminLoginInfo.UserName.Equals(AdminName)) {
+                adminLoginInfo.Password = EncodeText(adminLoginInfo.Password);
+                ServerAccount[AdminName] = adminLoginInfo;
                 Utils.SaveFile(AccountInfosFilePath, JsonConvert.SerializeObject(ServerAccount));
                 return new TddsSvcMsg(MessageType.Success, "Admin account is created.");
             } else {
                 return new TddsSvcMsg(MessageType.Error, 
-                    "Create administrator account failed. The length of user name and password must be more than or equals 4 and less than  or equals 20. And the name of administrator account must be [admin].");
+                    "Create administrator account failed. The length of user name and password must be more than or equals 4. And the name of administrator account must be [admin].");
             }
         }
 
@@ -72,7 +74,7 @@ namespace TddsServer.General {
                 }
                 return new TddsSvcMsg(MessageType.Success, $"Successfully created a account with name [{account.UserName}].", true);
             } else {
-                return new TddsSvcMsg(MessageType.Error, "Create account failed. The length of user name and password must be more than or equals 4 and less than  or equals 20.", false);
+                return new TddsSvcMsg(MessageType.Error, "Create account failed. The length of user name and password must be more than or equals 4.", false);
             }
         }
 
@@ -116,13 +118,13 @@ namespace TddsServer.General {
             if (!EncodeText(info.OldPassword).Equals(oldPwd))
                 return new TddsSvcMsg(MessageType.Error, $"The old password of account {info.UserName} is not correct.");
             if(!CheckAccountInfo(info)) return new TddsSvcMsg(MessageType.Error,
-                     "Create administrator account failed. The length of user name and password must be more than or equals 4 and less than  or equals 20. And the name of administrator account must be [admin].");
+                     "Create administrator account failed. The length of user name and password must be more than or equals 4. And the name of administrator account must be [admin].");
 
             // Encode and modify password
             ServerAccount[info.UserName].Password = EncodeText(info.Password);
             try {
                 Utils.SaveFile(AccountInfosFilePath, JsonConvert.SerializeObject(ServerAccount));
-                return new TddsSvcMsg(MessageType.Success, $"Successfully modified the password of account {info.UserName}.");
+                return new TddsSvcMsg(MessageType.Success, $"Successfully modified the password of account {info.UserName}.",true);
             }catch(Exception exp) {
                 ServerAccount[info.UserName].Password = oldPwd;
                 return new TddsSvcMsg(MessageType.Error, $"Error occur when reset account named {info.UserName}. " + exp.Message);
@@ -159,7 +161,7 @@ namespace TddsServer.General {
                 || loginInfo.UserName.Length > 20) return false;
             if (string.IsNullOrEmpty(loginInfo.Password)
                 || loginInfo.Password.Length < 4
-                || loginInfo.Password.Length > 20) return false;
+                || loginInfo.Password.Length > 64) return false;
             return true;
         }
     }

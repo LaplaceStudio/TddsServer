@@ -1,4 +1,5 @@
-﻿using System.Net.WebSockets;
+﻿using Newtonsoft.Json;
+using System.Net.WebSockets;
 using System.Text;
 using TddsServer.Objects;
 
@@ -41,34 +42,34 @@ namespace TddsServer.General {
                 case MessageType.HasAdminLoginInfo:
                     return AccountManager.HasAdminLoginInfo();
                 case MessageType.SetAdminLoginInfo:
-                    if (msg.Data != null && msg.Data is AccountInfo info)
+                    if (msg.Data != null && msg.Data!=null && JsonConvert.DeserializeObject(msg.Data.ToString(),typeof(AccountInfo)) is AccountInfo info)
                         return AccountManager.SetAdminLoginInfo(info);
                     else
                         return TddsSvcMsg.InvalidParamMsg("adminLoginInfo");
                 case MessageType.GetAllAccount:
                     return AccountManager.GetAllAccount();
                 case MessageType.RigisterAccount:
-                    if (msg.Data != null && msg.Data is AccountInfo newAcc)
+                    if (msg.Data != null && msg.Data!=null && JsonConvert.DeserializeObject(msg.Data.ToString(),typeof(AccountInfo)) is AccountInfo newAcc)
                         return AccountManager.RigisterAccount(newAcc);
                     else
                         return TddsSvcMsg.InvalidParamMsg("AccountInfo");
                 case MessageType.DestoryAccount:
-                    if (msg.Data != null && msg.Data is string uName)
+                    if (msg.Data != null && msg.Data!=null && msg.Data.ToString() is string uName)
                         return AccountManager.DestoryAccount(uName);
                     else
                         return TddsSvcMsg.InvalidParamMsg("UserName");
                 case MessageType.ResetAccount:
-                    if (msg.Data != null && msg.Data is AccountResetInfo resetInfo)
+                    if (msg.Data != null && msg.Data!=null && JsonConvert.DeserializeObject(msg.Data.ToString(),typeof(AccountResetInfo)) is AccountResetInfo resetInfo)
                         return AccountManager.ResetAccount(resetInfo);
                     else
                         return TddsSvcMsg.InvalidParamMsg("AccountResetInfo");
                 case MessageType.ModifyAccount:
-                    if (msg.Data != null && msg.Data is AccountInfo info2)
+                    if (msg.Data != null && msg.Data!=null && JsonConvert.DeserializeObject(msg.Data.ToString(),typeof(AccountInfo)) is AccountInfo info2)
                         return AccountManager.ModifyAccount(info2);
                     else
                         return TddsSvcMsg.InvalidParamMsg("accountInfo");
                 case MessageType.UserLogIn:
-                    if (msg.Data != null && msg.Data is AccountInfo acc)
+                    if (msg.Data != null && msg.Data!=null && JsonConvert.DeserializeObject(msg.Data.ToString(),typeof(AccountInfo)) is AccountInfo acc)
                         return AccountManager.Login(acc);
                     else
                         return TddsSvcMsg.InvalidParamMsg("AccountInfo");
