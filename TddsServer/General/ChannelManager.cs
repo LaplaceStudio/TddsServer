@@ -164,7 +164,12 @@ namespace TddsServer.General {
             if (ChannelImageFormats == null || ChannelImageFormats.IsEmpty) {
                 msg = new TddsSvcMsg(MessageType.Error, "No any channels.");
             } else {
-                msg = new TddsSvcMsg(MessageType.Success, $"Got image format of {ChannelImageFormats.Count} channels.", ChannelImageFormats.Values.ToList());
+                List<CameraConfig> list = ChannelImageFormats.Values.ToList();
+                list.ForEach(c => {
+                    c.IsConnected = true;
+                    c.IsWorking = true;
+                });
+                msg = new TddsSvcMsg(MessageType.Success, $"Got image format of {ChannelImageFormats.Count} channels.", list);
             }
             await Logger.Log(LogType.Info,msg.Message);
             return msg;

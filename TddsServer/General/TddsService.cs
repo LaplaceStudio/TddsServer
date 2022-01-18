@@ -8,6 +8,7 @@ namespace TddsServer.General {
 
         public static ServiceManager ConsoleManager = new ServiceManager();
         public static ServiceManager NoticeManager = new ServiceManager();
+        public static ServiceManager FileManager = new ServiceManager();
 
         public static async Task<TddsSvcMsg> Handle(TddsSvcMsg msg) {
             if (msg == null) {
