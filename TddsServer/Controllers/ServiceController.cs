@@ -21,7 +21,10 @@ namespace TddsServer.Controllers {
         [HttpPost("/service")]
         public async Task<ActionResult<TddsSvcMsg>> Get([FromBody] TddsSvcMsg msg) {
             if (msg == null) return BadRequest();
-            return await TddsService.Handle(msg);
+            await Logger.Log(LogType.Info, "Received:"+JsonConvert.SerializeObject(msg));
+            var result = await TddsService.Handle(msg);
+            await Logger.Log(LogType.Info, "Result:" + JsonConvert.SerializeObject(result));
+            return result;
         }
 
         /// <summary>
