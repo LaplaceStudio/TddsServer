@@ -36,7 +36,8 @@ namespace TddsServer.General {
                     }
                 case MessageType.GetAllChannelsImageFormat:
                     return await ChannelManager.GetAllChannelsImageFormats();
-
+                case MessageType.GetCamerasStatus:
+                    return ChannelManager.GetChannelsStatus();
 
                 #region Account
 

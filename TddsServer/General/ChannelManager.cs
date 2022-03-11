@@ -13,6 +13,8 @@ namespace TddsServer.General {
         /// </summary>
         private static int MAX_CHANNELS_COUNT = 32;
 
+        private static int[] CHANNEL_IDS = Enumerable.Range(1,8).ToArray();
+
         private static ConcurrentDictionary<int, WebSocket> UploadChannels = new ConcurrentDictionary<int, WebSocket>();
         private static ConcurrentDictionary<int, WebSocket> DownloadChannels = new ConcurrentDictionary<int, WebSocket>();
         private static ConcurrentDictionary<int, CameraConfig> ChannelImageFormats = new ConcurrentDictionary<int, CameraConfig>();
@@ -165,14 +167,24 @@ namespace TddsServer.General {
                 msg = new TddsSvcMsg(MessageType.Error, "No any channels.");
             } else {
                 List<CameraConfig> list = ChannelImageFormats.Values.ToList();
-                list.ForEach(c => {
-                    c.IsConnected = true;
-                    c.IsWorking = true;
-                });
                 msg = new TddsSvcMsg(MessageType.Success, $"Got image format of {ChannelImageFormats.Count} channels.", list);
             }
             await Logger.Log(LogType.Info,msg.Message);
             return msg;
+        }
+
+        public static TddsSvcMsg GetChannelsStatus() {
+            List<CameraConfig> list = new List<CameraConfig>();
+            foreach(int id in CHANNEL_IDS) {
+                CameraConfig config = new CameraConfig() {
+                    ChannelId = id.ToString(),
+                    Status = UploadChannels.ContainsKey(id) ?
+                    (DownloadChannels.ContainsKey(id) ?
+                    CameraStatus.Running : CameraStatus.Connected) : CameraStatus.Disconnected
+                };
+                list.Add(config);
+            }
+            return new TddsSvcMsg(MessageType.Success, "", list);
         }
     }
 }

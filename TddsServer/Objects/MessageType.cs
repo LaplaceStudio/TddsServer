@@ -24,6 +24,7 @@
         GetChannelIds = 105,
         GetChannelImageFormat = 106,
         GetAllChannelsImageFormat = 107,
+        GetCamerasStatus=108,
 
 
         #endregion
